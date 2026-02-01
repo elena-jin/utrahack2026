@@ -1,0 +1,95 @@
+#define S0 8
+#define S1 9
+#define S2 10
+#define S3 11
+#define sensorOut 12
+
+int redF = 0;
+int greenF = 0;
+int blueF = 0;
+
+int redRGB = 0;
+int greenRGB = 0;
+int blueRGB = 0;
+
+// Temporary dummy calibration — adjust later
+int redMin = 20,   redMax = 300;
+int greenMin = 20, greenMax = 300;
+int blueMin = 20,  blueMax = 300;
+
+void setup() {
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(sensorOut, INPUT);
+
+  // 100% frequency scaling
+  digitalWrite(S0, HIGH);
+  digitalWrite(S1, HIGH);
+
+  Serial.begin(9600);
+  delay(500);
+  Serial.println("TCS3200 Color Sensor Test Starting...");
+}
+
+void loop() {
+  // ---- RED ----
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  delay(10);
+  redF = pulseIn(sensorOut, LOW, 100000);
+
+  // ---- GREEN ----
+  digitalWrite(S2, HIGH);
+  digitalWrite(S3, HIGH);
+  delay(10);
+  greenF = pulseIn(sensorOut, LOW, 100000);
+
+  // ---- BLUE ----
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, HIGH);
+  delay(10);
+  blueF = pulseIn(sensorOut, LOW, 100000);
+
+  // ---- Map to RGB (0–255) ----
+  redRGB   = map(redF, redMin, redMax, 255, 0);
+  greenRGB = map(greenF, greenMin, greenMax, 255, 0);
+  blueRGB  = map(blueF, blueMin, blueMax, 255, 0);
+
+  redRGB   = constrain(redRGB, 0, 255);
+  greenRGB = constrain(greenRGB, 0, 255);
+  blueRGB  = constrain(blueRGB, 0, 255);
+
+  // ---- SERIAL OUTPUT ----
+  Serial.print("RGB -> ");
+  Serial.print("R: "); Serial.print(redRGB);
+  Serial.print("  G: "); Serial.print(greenRGB);
+  Serial.print("  B: "); Serial.println(blueRGB);
+
+/// ---- VERY SIMPLE COLOR NAME DETECTION ----
+String colorName = "Unknown";
+
+int brightness = (redRGB + greenRGB + blueRGB) / 3;
+
+// If it's very dark, call it black
+if (brightness < 40) {
+  colorName = "Black";
+} else {
+  // Find the biggest channel
+  if (redRGB >= greenRGB && redRGB >= blueRGB) {
+    colorName = "Red";
+  }
+  else if (greenRGB >= redRGB && greenRGB >= blueRGB) {
+    colorName = "Green";
+  }
+  else if (blueRGB >= redRGB && blueRGB >= greenRGB) {
+    colorName = "Blue";
+  }
+}
+
+// Print result
+Serial.print("Detected Color: ");
+Serial.println(colorName);
+}
+
